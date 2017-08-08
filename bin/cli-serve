@@ -13,6 +13,7 @@ const kue = require('../services/kue');
 const mongoose = require('../services/mongoose');
 const util = require('./util');
 const cache = require('../services/cache');
+const popular = require('../services/popular');
 const {createSubscriptionManager} = require('../graph/subscriptions');
 const {
   PORT
@@ -85,6 +86,7 @@ async function onListening() {
 
   // Start the cache instance.
   await cache.init();
+  await popular.init();
 
   let addr = server.address();
   let bind = typeof addr === 'string'

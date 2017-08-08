@@ -1,6 +1,7 @@
 const ActionModel = require('../../models/action');
 const ActionsService = require('../../services/actions');
 const UsersService = require('../../services/users');
+const Popular = require('../../services/popular');
 const errors = require('../../errors');
 const {CREATE_ACTION, DELETE_ACTION} = require('../../perms/constants');
 
@@ -21,6 +22,10 @@ const createAction = async ({user = {}, pubsub, loaders: {Comments}}, {item_id, 
     if (!comment) {
       throw new Error('Comment not found');
     }
+
+    if (action_type === 'FLAG') {
+      pubsub.publish('commentFlagged', comment);
+    }
   }
 
   let action = await ActionsService.insertUserAction({
@@ -32,14 +37,14 @@ const createAction = async ({user = {}, pubsub, loaders: {Comments}}, {item_id, 
     metadata
   });
 
+  if (item_type === 'COMMENTS') {
+    await Popular.incrementCommentAction(comment.asset_id, action_type, item_id);
+  }
+
   if (item_type === 'USERS' && action_type === 'FLAG') {
 
     // Set the user as pending if it was a user flag.
     await UsersService.setStatus(item_id, 'PENDING');
-  }
-
-  if (comment) {
-    pubsub.publish('commentFlagged', comment);
   }
 
   return action;
@@ -51,11 +56,20 @@ const createAction = async ({user = {}, pubsub, loaders: {Comments}}, {item_id, 
  * @param  {String} id   the id of the action to delete
  * @return {Promise}     resolves to the deleted action, or null if not found.
  */
-const deleteAction = ({user}, {id}) => {
-  return ActionModel.findOneAndRemove({
+const deleteAction = async ({user, loaders: {Comments}}, {id}) => {
+  const action = await ActionModel.findOneAndRemove({
     id,
     user_id: user.id
   });
+
+  if (action.item_type === 'COMMENTS') {
+    let comment = await Comments.get.load(action.item_id);
+    if (comment) {
+      await Popular.decrementCommentAction(comment.asset_id, action.action_type, comment.id);
+    }
+  }
+
+  return action;
 };
 
 module.exports = (context) => {

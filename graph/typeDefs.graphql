@@ -569,6 +569,8 @@ type Asset {
   # Returns recent comments
   recentComments: [Comment!]
 
+  popular(action_type: ACTION_TYPE!, limit: Int = 10, offset: Int = 0): [Comment!]
+
   # The comments that are attached to the asset.
   # If `deep` is true, it will return comments of all depths,
   # otherwise only top-level comments are returned.

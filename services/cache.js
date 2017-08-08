@@ -1,6 +1,5 @@
 const redis = require('./redis');
 const debug = require('debug')('talk:services:cache');
-const crypto = require('crypto');
 
 const cache = module.exports = {};
 
@@ -77,42 +76,6 @@ if redis.call('GET', KEYS[1]) ~= false then
 end
 `;
 
-// Load the script into redis and track the script hash that we will use to exec
-// increments on.
-const loadScript = (name, script) => new Promise((resolve, reject) => {
-
-  let shasum = crypto.createHash('sha1');
-  shasum.update(script);
-
-  let hash = shasum.digest('hex');
-
-  cache.client
-    .script('EXISTS', hash, (err, [exists]) => {
-      if (err) {
-        return reject(err);
-      }
-
-      if (exists) {
-        debug(`already loaded ${name} as SHA[${hash}], not loading again`);
-
-        return resolve(hash);
-      }
-
-      debug(`${name} not loaded as SHA[${hash}], loading`);
-
-      cache.client
-        .script('load', script, (err, hash) => {
-          if (err) {
-            return reject(err);
-          }
-
-          debug(`loaded ${name} as SHA[${hash}]`);
-
-          resolve(hash);
-        });
-    });
-});
-
 /**
  * Init sets up the scripts used in Redis with the incr/decr commands.
  */
@@ -123,8 +86,8 @@ cache.init = async () => {
 
   // Load the INCR_SCRIPT and DECR_SCRIPT into Redis.
   let [incrScriptHash, decrScriptHash] = await Promise.all([
-    loadScript('INCR_SCRIPT', INCR_SCRIPT),
-    loadScript('DECR_SCRIPT', DECR_SCRIPT)
+    cache.client.loadScript('INCR_SCRIPT', INCR_SCRIPT),
+    cache.client.loadScript('DECR_SCRIPT', DECR_SCRIPT)
   ]);
 
   // Set the globally scoped cache hashes.
@@ -136,7 +99,7 @@ cache.init = async () => {
  * This will increment a key in redis and update the expiry iff it already
  * exists, otherwise it will do nothing.
  */
-cache.incr = (key, expiry, kf = keyfunc) => new Promise((resolve, reject) => {
+cache.incr = async (key, expiry, kf = keyfunc) => new Promise((resolve, reject) => {
   cache.client
     .evalsha(cache.INCR_SCRIPT_HASH, 1, kf(key), expiry, (err) => {
       if (err) {
@@ -151,7 +114,7 @@ cache.incr = (key, expiry, kf = keyfunc) => new Promise((resolve, reject) => {
  * This will decrement a key in redis and update the expiry iff it already
  * exists, otherwise it will do nothing.
  */
-cache.decr = (key, expiry, kf = keyfunc) => new Promise((resolve, reject) => {
+cache.decr = async (key, expiry, kf = keyfunc) => new Promise((resolve, reject) => {
   cache.client
     .evalsha(cache.DECR_SCRIPT_HASH, 1, kf(key), expiry, (err) => {
       if (err) {

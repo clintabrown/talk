@@ -3,7 +3,15 @@ const {
   SEARCH_NON_NULL_OR_ACCEPTED_COMMENTS,
 } = require('../../perms/constants');
 
+const Popular = require('../../services/popular');
+
 const Asset = {
+  async popular({id}, {action_type, limit, offset}, {loaders: {Comments}}) {
+    let popular = await Popular.getByActionType(id, action_type, limit, offset);
+    if (popular) {
+      return popular.map(({item_id}) => Comments.get.load(item_id));
+    }
+  },
   recentComments({id}, _, {loaders: {Comments}}) {
     return Comments.genRecentComments.load(id);
   },
