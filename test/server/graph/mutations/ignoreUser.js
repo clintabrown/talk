@@ -60,23 +60,6 @@ describe('graph.mutations.ignoreUser', () => {
     expect(ignoredUsers[0].id).to.equal(userToIgnore.id);
     expect(ignoredUsers[0].username).to.equal(userToIgnore.username);
   });
-
-  it('users cannot ignore themselves', async () => {
-    const user = await UsersService.createLocalUser('usernameA@example.com', 'password', 'usernameA');
-    const context = new Context({user});
-    const ignoreUserResponse = await graphql(schema, ignoreUserMutation, {}, context, {id: user.id});
-    expect(ignoreUserResponse.errors).to.not.be.empty;
-
-    // now check my ignored users
-    const myIgnoredUsersResponse = await graphql(schema, getMyIgnoredUsersQuery, {}, context, {});
-    if (myIgnoredUsersResponse.errors && myIgnoredUsersResponse.errors.length) {
-      console.error(myIgnoredUsersResponse.errors);
-    }
-    expect(myIgnoredUsersResponse.errors).to.be.empty;
-    const myIgnoredUsers = myIgnoredUsersResponse.data.me.ignoredUsers;
-    expect(myIgnoredUsers.length).to.equal(0);
-  });
-
 });
 
 describe('graph.mutations.stopIgnoringUser', () => {

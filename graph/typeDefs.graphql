@@ -248,9 +248,6 @@ input CommentsQuery {
 
   # Filter by a specific tag name.
   tags: [String!]
-
-  # Exclude comments ignored by the requesting user
-  excludeIgnored: Boolean
 }
 
 # CommentCountQuery allows the ability to query comment counts by specific
@@ -314,10 +311,10 @@ type Comment {
   recentReplies: [Comment!]
 
   # the replies that were made to the comment.
-  replies(sort: SORT_ORDER = CHRONOLOGICAL, limit: Int = 3, excludeIgnored: Boolean): CommentConnection!
+  replies(sort: SORT_ORDER = CHRONOLOGICAL, limit: Int = 3): CommentConnection!
 
   # The count of replies on a comment.
-  replyCount(excludeIgnored: Boolean): Int
+  replyCount: Int
 
   # Actions completed on the parent. Requires the `ADMIN` role.
   actions: [Action]
@@ -575,7 +572,6 @@ type Asset {
   comments(
     sort: SORT_ORDER = REVERSE_CHRONOLOGICAL,
     limit: Int = 10,
-    excludeIgnored: Boolean,
     tags: [String!]
     deep: Boolean,
   ): CommentConnection!
@@ -584,10 +580,10 @@ type Asset {
   comment(id: ID!): Comment
 
   # The count of top level comments on the asset.
-  commentCount(excludeIgnored: Boolean, tags: [String!]): Int
+  commentCount(tags: [String!]): Int
 
   # The total count of all comments made on the asset.
-  totalCommentCount(excludeIgnored: Boolean, tags: [String!]): Int
+  totalCommentCount(tags: [String!]): Int
 
   # The settings (rectified with the global settings) that should be applied to
   # this asset.

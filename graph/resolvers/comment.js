@@ -14,25 +14,18 @@ const Comment = {
   recentReplies({id}, _, {loaders: {Comments}}) {
     return Comments.genRecentReplies.load(id);
   },
-  replies({id, asset_id}, {sort, limit, excludeIgnored}, {loaders: {Comments}}) {
+  replies({id, asset_id}, {sort, limit}, {loaders: {Comments}}) {
     return Comments.getByQuery({
       asset_id,
       parent_id: id,
       sort,
       limit,
-      excludeIgnored,
     });
   },
-  replyCount({id}, {excludeIgnored}, {user, loaders: {Comments}}) {
-
-    // TODO: remove
-    if (user && excludeIgnored) {
-      return Comments.countByParentIDPersonalized({id, excludeIgnored});
-    }
+  replyCount({id}, args, {loaders: {Comments}}) {
     return Comments.countByParentID.load(id);
   },
   actions({id}, _, {user, loaders: {Actions}}) {
-
     if (user && user.can('SEARCH_ACTIONS')) {
       return Actions.getByID.load(id);
     }

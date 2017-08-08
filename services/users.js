@@ -1,4 +1,3 @@
-const assert = require('assert');
 const uuid = require('uuid');
 const bcrypt = require('bcryptjs');
 const url = require('url');
@@ -922,13 +921,6 @@ module.exports = class UsersService {
    * @param  {Array<String>} usersToIgnore Array of user IDs to ignore
    */
   static ignoreUsers(id, usersToIgnore) {
-    assert(Array.isArray(usersToIgnore), 'usersToIgnore is an array');
-    assert(usersToIgnore.every((u) => typeof u === 'string'), 'usersToIgnore is an array of string user IDs');
-    if (usersToIgnore.includes(id)) {
-      throw new Error('Users cannot ignore themselves');
-    }
-
-    // TODO: For each usersToIgnore, make sure they exist?
     return UserModel.update({id}, {
       $addToSet:  {
         ignoresUsers: {
@@ -944,9 +936,7 @@ module.exports = class UsersService {
    * @param  {Array<String>} usersToStopIgnoring Array of user IDs to stop ignoring
    */
   static async stopIgnoringUsers(id, usersToStopIgnoring) {
-    assert(Array.isArray(usersToStopIgnoring), 'usersToStopIgnoring is an array');
-    assert(usersToStopIgnoring.every((u) => typeof u === 'string'), 'usersToStopIgnoring is an array of string user IDs');
-    await UserModel.update({id}, {
+    return UserModel.update({id}, {
       $pullAll:  {
         ignoresUsers: usersToStopIgnoring
       }

@@ -20,36 +20,27 @@ const Asset = {
 
     return comments.nodes[0];
   },
-  comments({id}, {sort, limit, deep, excludeIgnored, tags}, {loaders: {Comments}}) {
+  comments({id}, {sort, limit, deep, tags}, {loaders: {Comments}}) {
     return Comments.getByQuery({
       asset_id: id,
       sort,
       limit,
       parent_id: deep ? undefined : null,
       tags,
-      excludeIgnored,
     });
   },
-  commentCount({id, commentCount}, {excludeIgnored, tags}, {user, loaders: {Comments}}) {
-
-    // TODO: remove
-    if ((user && excludeIgnored) || tags) {
-      return Comments.parentCountByAssetIDPersonalized({assetId: id, excludeIgnored, tags});
-    }
+  commentCount({id, commentCount}, {tags}, {loaders: {Comments}}) {
     if (commentCount != null) {
       return commentCount;
     }
+
     return Comments.parentCountByAssetID.load(id);
   },
-  totalCommentCount({id, totalCommentCount}, {excludeIgnored, tags}, {user, loaders: {Comments}}) {
-
-    // TODO: remove
-    if ((user && excludeIgnored) || tags) {
-      return Comments.countByAssetIDPersonalized({assetId: id, excludeIgnored, tags});
-    }
+  totalCommentCount({id, totalCommentCount}, {tags}, {loaders: {Comments}}) {
     if (totalCommentCount != null) {
       return totalCommentCount;
     }
+
     return Comments.countByAssetID.load(id);
   },
   async settings({settings = null}, _, {loaders: {Settings}}) {
