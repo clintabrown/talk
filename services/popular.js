@@ -6,9 +6,6 @@ const debug = require('debug')('talk:services:popular');
 const ActionModel = require('../models/action');
 const CommentModel = require('../models/comment');
 
-// // POPULAR_INCR_SCRIPT_HASH will store the hash of the POPULAR_INCR_SCRIPT.
-// let POPULAR_INCR_SCRIPT_HASH;
-
 // POPULAR_INCR_SCRIPT is the lua script for implementing score updating
 // in redis.
 const POPULAR_INCR_SCRIPT = `
@@ -16,21 +13,6 @@ if redis.call('ZCARD', KEYS[1]) ~= 0 then
   return redis.call('ZINCRBY', KEYS[1], ARGV[1], KEYS[2])
 end
 `;
-
-// // incrementScoreBy will increment the score by a value.
-// async function incrementScoreBy(key, member, delta) {
-//   return new Promise((resolve, reject) => {
-//     debug(`EXECUTE: EVALSHA ${POPULAR_INCR_SCRIPT_HASH} 2 ${key} ${member} ${delta}`);
-//     client()
-//       .evalsha(POPULAR_INCR_SCRIPT_HASH, 2, key, member, delta, (err, score) => {
-//         if (err) {
-//           return reject(err);
-//         }
-
-//         return resolve(score);
-//       });
-//   });
-// }
 
 // setScores will set an array of scores onto a sorted list.
 async function setScores(key, scores) {
@@ -113,44 +95,47 @@ async function computeScores(asset_id, action_type) {
   // The scores weren't found, we should populate them.
   let scores = await ActionModel.aggregate([
 
-      // Filter down the result set.
+    // Filter down the result set.
     {$match: {
 
-        // Only get the actions for the comments from this asset.
+      // Only get the actions for the comments from this asset.
       item_id: {
         $in: assetCommentIDs,
       },
 
-        // Only get the actions that are the specified action type.
+      // Only get the actions that are the specified action type.
       action_type,
+
+      // We are only interested in top level comments.
+      parent_id: null,
     }},
 
-      // Group the resulting data.
+    // Group the resulting data.
     {$group: {
 
-        // Group by the item_id.
+      // Group by the item_id.
       _id: '$item_id',
 
-        // And count up the number of actions.
+      // And count up the number of actions.
       count: {
         $sum: 1
       },
     }},
 
-      // Remap some of the fields.
+    // Remap some of the fields.
     {$project: {
 
-        // Suppress the _id field.
+      // Suppress the _id field.
       _id: false,
 
-        // Remap the field for the item_id out of the _id.
+      // Remap the field for the item_id out of the _id.
       item_id: '$_id',
 
-        // Include the grouping count.
+      // Include the grouping count.
       count: '$count',
     }},
 
-      // Sort these responses with the count.
+    // Sort these responses with the count.
     {$sort: {
       count: -1,
     }},

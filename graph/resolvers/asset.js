@@ -15,18 +15,17 @@ const Asset = {
   recentComments({id}, _, {loaders: {Comments}}) {
     return Comments.genRecentComments.load(id);
   },
-  async comment({id}, {id: commentId}, {loaders: {Comments}, user}) {
+  async comment({id}, {id: commentID}, {loaders: {Comments}, user}) {
     const statuses = user && user.can(SEARCH_NON_NULL_OR_ACCEPTED_COMMENTS)
       ? ['NONE', 'ACCEPTED', 'PREMOD', 'REJECTED']
       : ['NONE', 'ACCEPTED'];
+    
+    let comment = await Comments.get.load(commentID);
+    if (!comment || !statuses.includes(comment.status) || comment.asset_id !== id) {
+      return null;
+    }
 
-    const comments = await Comments.getByQuery({
-      asset_id: id,
-      ids: commentId,
-      statuses,
-    });
-
-    return comments.nodes[0];
+    return comment;
   },
   comments({id}, {sort, limit, deep, excludeIgnored, tags}, {loaders: {Comments}}) {
     return Comments.getByQuery({
